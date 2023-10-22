@@ -1956,7 +1956,7 @@ void StyleComputer::compute_font(StyleProperties& style, DOM::Element const* ele
     auto font_stretch = style.property(CSS::PropertyID::FontStretch);
 
     auto found_font = compute_font_for_style_values(element, pseudo_element, font_family, font_size, font_style, font_weight, font_stretch, style.math_depth());
-
+    if (element) dbgln("element = {} found_font = {}", element->tag_name(), found_font->human_readable_name());
     style.set_property(CSS::PropertyID::FontSize, LengthStyleValue::create(CSS::Length::make_px(CSSPixels::nearest_value_for(found_font->pixel_size()))), nullptr);
     style.set_property(CSS::PropertyID::FontWeight, NumberStyleValue::create(font_weight->to_font_weight()));
 

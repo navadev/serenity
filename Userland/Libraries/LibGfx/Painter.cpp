@@ -1479,6 +1479,7 @@ void Painter::draw_glyph_or_emoji(FloatPoint point, Utf8CodePointIterator& it, F
 
     // If the font contains the glyph, and we know it's not the start of an emoji, draw a text glyph.
     if (font_contains_glyph && !check_for_emoji) {
+        dbgln("Draw text glyph for code_point={}", code_point);
         draw_glyph(point, code_point, font, color);
         return;
     }
@@ -1496,7 +1497,7 @@ void Painter::draw_glyph_or_emoji(FloatPoint point, Utf8CodePointIterator& it, F
     }
 
     // No suitable glyph found, draw a replacement character.
-    dbgln_if(EMOJI_DEBUG, "Failed to find a glyph or emoji for code_point {}", code_point);
+    dbgln("Failed to find a glyph or emoji for code_point {} font={}", code_point, font.human_readable_name());
     draw_glyph(point, 0xFFFD, font, color);
 }
 

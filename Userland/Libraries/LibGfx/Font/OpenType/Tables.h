@@ -330,7 +330,8 @@ public:
     String subfamily_name() const { return string_for_id(NameId::SubfamilyName); }
     String typographic_family_name() const { return string_for_id(NameId::TypographicFamilyName); }
     String typographic_subfamily_name() const { return string_for_id(NameId::TypographicSubfamilyName); }
-
+    const unsigned char *slice_data() { return m_slice.data(); }
+    size_t slice_size() { return m_slice.size(); }
 private:
     // https://learn.microsoft.com/en-us/typography/opentype/spec/name#name-records
     struct NameRecord {

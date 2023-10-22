@@ -25,6 +25,7 @@ class Font : public Gfx::VectorFont {
 
 public:
     static ErrorOr<NonnullRefPtr<Font>> try_load_from_file(DeprecatedString path, unsigned index = 0);
+    static ErrorOr<Vector<NonnullRefPtr<Font>>> try_load_collection_from_file(DeprecatedString path);
     static ErrorOr<NonnullRefPtr<Font>> try_load_from_externally_owned_memory(ReadonlyBytes bytes, unsigned index = 0);
 
     virtual Gfx::ScaledFontMetrics metrics(float x_scale, float y_scale) const override;

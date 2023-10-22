@@ -21,7 +21,7 @@
 #include <LibTextCodec/Decoder.h>
 #include <math.h>
 #include <sys/mman.h>
-
+#include <LibCore/Process.h>
 namespace OpenType {
 
 u16 be_u16(u8 const*);
@@ -294,6 +294,8 @@ Optional<i16> Kern::read_glyph_kerning_format0(ReadonlyBytes slice, u16 left_gly
 
 String Name::string_for_id(NameId id) const
 {
+    //dbgln("GABE: Name::string_for_id p={} s={}", m_slice.data(), m_slice.size());
+    //dbgln("GABE: Name::string_for_id v={}", header().version);
     auto const count = header().count;
     auto const storage_offset = header().storage_offset;
 
@@ -356,6 +358,34 @@ ErrorOr<NonnullRefPtr<Font>> Font::try_load_from_file(DeprecatedString path, uns
     auto font = TRY(try_load_from_externally_owned_memory(file->bytes(), index));
     font->m_mapped_file = move(file);
     return font;
+}
+
+ErrorOr<Vector<NonnullRefPtr<Font>>> Font::try_load_collection_from_file(DeprecatedString path)
+{
+    Vector<NonnullRefPtr<Font>> fonts;
+    auto file = TRY(Core::MappedFile::map(path));
+    ReadonlyBytes buffer = file->bytes();
+    u32 tag = be_u32(buffer.data());
+    if (tag == tag_from_str("ttcf")) {
+        // It's a font collection
+        if (buffer.size() < (u32)Sizes::TTCHeaderV1 + sizeof(u32))
+            return Error::from_string_literal("Font file too small");
+
+
+        //u16 version = be_u16(buffer.offset(sizeof(u32)));
+        //dbgln("GABE: version={}", version);
+        Core::Process::wait_for_debugger_and_break();
+        u32 numFonts = be_u32(buffer.offset(sizeof(u32) * 2));
+        for (u32 index = 0; index < numFonts; index++) {
+            auto file2 = TRY(Core::MappedFile::map(path));
+            if (auto font_or_error = try_load_from_externally_owned_memory(file2->bytes(), index); !font_or_error.is_error()) {
+                auto font = font_or_error.release_value();
+                font->m_mapped_file = move(file2);
+                fonts.append(font);
+            }
+        }
+    }
+    return fonts;
 }
 
 ErrorOr<NonnullRefPtr<Font>> Font::try_load_from_externally_owned_memory(ReadonlyBytes buffer, unsigned index)
@@ -424,6 +454,12 @@ ErrorOr<NonnullRefPtr<Font>> Font::try_load_from_offset(ReadonlyBytes buffer, u3
     for (auto i = 0; i < num_tables; i++) {
         u32 record_offset = offset + (u32)Sizes::OffsetTable + i * (u32)Sizes::TableRecord;
         u32 tag = be_u32(buffer.offset(record_offset));
+        char a = tag >> 24 & 0xFF;
+        char b = tag >> 16 & 0xFF;
+        char c = tag >> 8 & 0xFF;
+        char d = tag & 0xFF;
+        char tag_c[] = {a, b, c, d, '\0'};
+        dbgln("GABE: tag = {}", tag_c);
         u32 table_offset = be_u32(buffer.offset(record_offset + (u32)Offsets::TableRecord_Offset));
         u32 table_length = be_u32(buffer.offset(record_offset + (u32)Offsets::TableRecord_Length));
 
@@ -439,6 +475,7 @@ ErrorOr<NonnullRefPtr<Font>> Font::try_load_from_offset(ReadonlyBytes buffer, u3
         if (tag == tag_from_str("head")) {
             opt_head_slice = buffer_here;
         } else if (tag == tag_from_str("name")) {
+            //dbgln("GABE: found the name table with size = {}", table_length);
             opt_name_slice = buffer_here;
         } else if (tag == tag_from_str("hhea")) {
             opt_hhea_slice = buffer_here;
@@ -476,7 +513,7 @@ ErrorOr<NonnullRefPtr<Font>> Font::try_load_from_offset(ReadonlyBytes buffer, u3
     if (!opt_name_slice.has_value() || !(opt_name = Name::from_slice(opt_name_slice.value())).has_value())
         return Error::from_string_literal("Could not load Name");
     auto name = opt_name.value();
-
+    //dbgln("GABE: name.slice_data() p={} s={} name={} subname={}", name.slice_data(), name.slice_size(), name.family_name(), name.subfamily_name());
     if (!opt_hhea_slice.has_value() || !(opt_hhea = Hhea::from_slice(opt_hhea_slice.value())).has_value())
         return Error::from_string_literal("Could not load Hhea");
     auto hhea = opt_hhea.value();

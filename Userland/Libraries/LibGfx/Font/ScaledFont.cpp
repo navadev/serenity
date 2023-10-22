@@ -8,7 +8,7 @@
 #include <AK/Utf8View.h>
 #include <LibGfx/Font/Emoji.h>
 #include <LibGfx/Font/ScaledFont.h>
-
+#include <LibCore/Process.h>
 namespace Gfx {
 
 ScaledFont::ScaledFont(NonnullRefPtr<VectorFont> font, float point_width, float point_height, unsigned dpi_x, unsigned dpi_y)
@@ -74,6 +74,7 @@ ALWAYS_INLINE float ScaledFont::unicode_view_width(T const& view) const
 RefPtr<Gfx::Bitmap> ScaledFont::rasterize_glyph(u32 glyph_id, GlyphSubpixelOffset subpixel_offset) const
 {
     GlyphIndexWithSubpixelOffset index { glyph_id, subpixel_offset };
+    //Core::Process::wait_for_debugger_and_break();
     auto glyph_iterator = m_cached_glyph_bitmaps.find(index);
     if (glyph_iterator != m_cached_glyph_bitmaps.end())
         return glyph_iterator->value;

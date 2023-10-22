@@ -15,7 +15,7 @@
 #include <LibGfx/Font/OpenType/Font.h>
 #include <LibGfx/Font/Typeface.h>
 #include <LibGfx/Font/WOFF/Font.h>
-
+#include <LibCore/Process.h>
 namespace Gfx {
 
 FontDatabase& FontDatabase::the()
@@ -154,6 +154,17 @@ void FontDatabase::load_all_fonts_from_path(DeprecatedString const& root)
                     auto font = font_or_error.release_value();
                     auto typeface = get_or_create_typeface(font->family(), font->variant());
                     typeface->set_vector_font(move(font));
+                }
+            } else if (path.ends_with(".ttc"sv)) {
+                if (auto fonts_or_error = OpenType::Font::try_load_collection_from_file(path); !fonts_or_error.is_error()) {
+                    auto fonts = fonts_or_error.release_value();
+                    dbgln("GABE: path={} fontcount = {}", path, fonts);
+                    //Core::Process::wait_for_debugger_and_break();
+                    for (auto font : fonts) {
+                        dbgln("GABE: {} {}", font->family(), font->variant());
+                        auto typeface = get_or_create_typeface(font->family(), font->variant());
+                        typeface->set_vector_font(move(font));
+                    }
                 }
             } else if (path.ends_with(".woff"sv)) {
                 if (auto font_or_error = WOFF::Font::try_load_from_file(path); !font_or_error.is_error()) {
